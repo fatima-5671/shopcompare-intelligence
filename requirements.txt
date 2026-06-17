@@ -1,0 +1,25 @@
+# Scraping
+undetected-chromedriver==3.5.5
+selenium==4.21.0
+webdriver-manager==4.0.1
+beautifulsoup4==4.12.3
+requests==2.31.0
+lxml==5.2.2
+
+# Data
+pandas==2.2.2
+numpy==1.26.4
+rapidfuzz==3.9.3
+
+# Dashboard
+streamlit==1.35.0
+plotly==5.22.0
+
+# Orchestration (install separately or via pip)
+apache-airflow==2.9.1
+
+# Alerts
+# n8n is run as Docker service — no Python package needed
+
+# Dev
+python-dotenv==1.0.1

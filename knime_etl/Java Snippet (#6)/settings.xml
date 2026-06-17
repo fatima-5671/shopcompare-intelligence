@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="settings.xml">
+    <entry key="node_file" type="xstring" value="settings.xml"/>
+    <config key="flow_stack"/>
+    <config key="internal_node_subsettings">
+        <entry key="memory_policy" type="xstring" value="CacheSmallInMemory"/>
+    </config>
+    <config key="model">
+        <entry key="scriptImports" type="xstring" value="// Your custom imports:%%00010"/>
+        <entry key="scriptFields" type="xstring" value="// Your custom variables:%%00010"/>
+        <entry key="scriptBody" type="xstring" value="// Enter your code here:%%00010final double PKR_TO_USD = 280.0;%%00010%%00010// Read input values safely using KNIME's automatic system names%%00010String  currency     = c_currency;%%00010double  price        = c_price;%%00010double  origPrice    = c_original_price;%%00010double  discountPct  = c_discount_pct;%%00010double  rating       = c_rating;%%00010long    reviewCount  = c_review_count;%%00010%%00010// 1. Calculate USD Price%%00010double usdPrice = &quot;USD&quot;.equalsIgnoreCase(currency) ? price : price / PKR_TO_USD;%%00010usdPrice = Math.round(usdPrice * 100.0) / 100.0;%%00010%%00010// 2. Calculate Savings%%00010double priceSavings = Math.max(0, origPrice - price);%%00010priceSavings = Math.round(priceSavings * 100.0) / 100.0;%%00010%%00010// 3. Calculate Value Score%%00010double safeUsd = usdPrice &lt; 0.001 ? 0.001 : usdPrice;%%00010double valueScore = (rating * Math.log1p(reviewCount)) / safeUsd;%%00010valueScore = Math.round(valueScore * 10000.0) / 10000.0;%%00010%%00010// 4. Calculate Discount Flag%%00010boolean isHighDiscount = discountPct &gt;= 50.0;%%00010%%00010// 5. Categorize into Tiers%%00010String priceTier;%%00010if (usdPrice &lt; 5) {%%00010    priceTier = &quot;Budget&quot;;%%00010} else if (usdPrice &lt; 20) {%%00010    priceTier = &quot;Mid-range&quot;;%%00010} else {%%00010    priceTier = &quot;Premium&quot;;%%00010}%%00010%%00010// Map local calculations back to the Output variables declared at the bottom%%00010out_usd_price       = usdPrice;%%00010out_price_savings   = priceSavings;%%00010out_value_score     = valueScore;%%00010out_is_high_discount = isHighDiscount ? &quot;Yes&quot; : &quot;No&quot;;%%00010out_price_tier      = priceTier;%%00010"/>
+        <config key="jarFiles">
+            <entry key="array-size" type="xint" value="0"/>
+        </config>
+        <config key="outCols">
+            <entry key="array-size" type="xint" value="5"/>
+            <config key="0">
+                <entry key="Name" type="xstring" value="usd_price"/>
+                <entry key="JavaName" type="xstring" value="out_usd_price"/>
+                <entry key="JavaType" type="xstring" value="java.lang.Double"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.DoubleCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)"/>
+                <entry key="replaceExisting" type="xboolean" value="false"/>
+            </config>
+            <config key="1">
+                <entry key="Name" type="xstring" value="price_savings"/>
+                <entry key="JavaName" type="xstring" value="out_price_savings"/>
+                <entry key="JavaType" type="xstring" value="java.lang.Double"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.DoubleCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)"/>
+                <entry key="replaceExisting" type="xboolean" value="false"/>
+            </config>
+            <config key="2">
+                <entry key="Name" type="xstring" value="value_score"/>
+                <entry key="JavaName" type="xstring" value="out_value_score"/>
+                <entry key="JavaType" type="xstring" value="java.lang.Double"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.DoubleCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)"/>
+                <entry key="replaceExisting" type="xboolean" value="false"/>
+            </config>
+            <config key="3">
+                <entry key="Name" type="xstring" value="is_high_discount"/>
+                <entry key="JavaName" type="xstring" value="out_is_high_discount"/>
+                <entry key="JavaType" type="xstring" value="java.lang.String"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.StringCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                <entry key="replaceExisting" type="xboolean" value="false"/>
+            </config>
+            <config key="4">
+                <entry key="Name" type="xstring" value="price_tier"/>
+                <entry key="JavaName" type="xstring" value="out_price_tier"/>
+                <entry key="JavaType" type="xstring" value="java.lang.String"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.StringCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                <entry key="replaceExisting" type="xboolean" value="false"/>
+            </config>
+        </config>
+        <config key="outVars">
+            <entry key="array-size" type="xint" value="0"/>
+        </config>
+        <config key="inCols">
+            <entry key="array-size" type="xint" value="6"/>
+            <config key="0">
+                <entry key="Name" type="xstring" value="price"/>
+                <entry key="JavaName" type="xstring" value="c_price"/>
+                <entry key="JavaType" type="xstring" value="java.lang.Double"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.DoubleCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.convert.java.SimpleDataCellToJavaConverterFactory(DoubleValue,class java.lang.Double,Double)"/>
+            </config>
+            <config key="1">
+                <entry key="Name" type="xstring" value="currency"/>
+                <entry key="JavaName" type="xstring" value="c_currency"/>
+                <entry key="JavaType" type="xstring" value="java.lang.String"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.StringCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.convert.java.SimpleDataCellToJavaConverterFactory(StringValue,class java.lang.String,String)"/>
+            </config>
+            <config key="2">
+                <entry key="Name" type="xstring" value="original_price"/>
+                <entry key="JavaName" type="xstring" value="c_original_price"/>
+                <entry key="JavaType" type="xstring" value="java.lang.Double"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.DoubleCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.convert.java.SimpleDataCellToJavaConverterFactory(DoubleValue,class java.lang.Double,Double)"/>
+            </config>
+            <config key="3">
+                <entry key="Name" type="xstring" value="discount_pct"/>
+                <entry key="JavaName" type="xstring" value="c_discount_pct"/>
+                <entry key="JavaType" type="xstring" value="java.lang.Double"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.DoubleCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.convert.java.SimpleDataCellToJavaConverterFactory(DoubleValue,class java.lang.Double,Double)"/>
+            </config>
+            <config key="4">
+                <entry key="Name" type="xstring" value="rating"/>
+                <entry key="JavaName" type="xstring" value="c_rating"/>
+                <entry key="JavaType" type="xstring" value="java.lang.Double"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.DoubleCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.convert.java.SimpleDataCellToJavaConverterFactory(DoubleValue,class java.lang.Double,Double)"/>
+            </config>
+            <config key="5">
+                <entry key="Name" type="xstring" value="review_count"/>
+                <entry key="JavaName" type="xstring" value="c_review_count"/>
+                <entry key="JavaType" type="xstring" value="java.lang.Integer"/>
+                <config key="Type">
+                    <entry key="cell_class" type="xstring" value="org.knime.core.data.def.IntCell"/>
+                    <entry key="is_null" type="xboolean" value="false"/>
+                </config>
+                <entry key="ConverterFactory" type="xstring" value="org.knime.core.data.convert.java.SimpleDataCellToJavaConverterFactory(IntValue,class java.lang.Integer,Integer)"/>
+            </config>
+        </config>
+        <config key="inVars">
+            <entry key="array-size" type="xint" value="0"/>
+        </config>
+        <entry key="version" type="xstring" value="version 1.x"/>
+        <entry key="templateUUID" type="xstring" isnull="true" value=""/>
+        <entry key="runOnExecute" type="xboolean" value="false"/>
+        <config key="bundles">
+            <entry key="array-size" type="xint" value="0"/>
+        </config>
+    </config>
+    <entry key="customDescription" type="xstring" isnull="true" value=""/>
+    <entry key="state" type="xstring" value="EXECUTED"/>
+    <config key="nodecontainer_message">
+        <entry key="type" type="xstring" value="WARNING"/>
+        <entry key="message" type="xstring" value="Exceptions in the code caused missing rows to be output.%%00010Check log for details."/>
+    </config>
+    <entry key="factory" type="xstring" value="org.knime.base.node.jsnippet.JavaSnippetNodeFactory"/>
+    <entry key="node-name" type="xstring" value="Java Snippet"/>
+    <entry key="node-bundle-name" type="xstring" value="KNIME Java Snippet Nodes"/>
+    <entry key="node-bundle-symbolic-name" type="xstring" value="org.knime.jsnippets"/>
+    <entry key="node-bundle-vendor" type="xstring" value="KNIME AG, Zurich, Switzerland"/>
+    <entry key="node-bundle-version" type="xstring" value="5.11.0.v202602191748"/>
+    <entry key="node-feature-name" type="xstring" value="KNIME Javasnippet"/>
+    <entry key="node-feature-symbolic-name" type="xstring" value="org.knime.features.javasnippet.feature.group"/>
+    <entry key="node-feature-vendor" type="xstring" value="KNIME AG, Zurich, Switzerland"/>
+    <entry key="node-feature-version" type="xstring" value="5.11.0.v202602191748"/>
+    <config key="factory_settings"/>
+    <entry key="name" type="xstring" value="Java Snippet"/>
+    <entry key="hasContent" type="xboolean" value="true"/>
+    <entry key="isInactive" type="xboolean" value="false"/>
+    <config key="ports">
+        <config key="port_1">
+            <entry key="index" type="xint" value="1"/>
+            <entry key="port_spec_class" type="xstring" value="org.knime.core.data.DataTableSpec"/>
+            <entry key="port_object_class" type="xstring" value="org.knime.core.node.BufferedDataTable"/>
+            <entry key="port_object_summary" type="xstring" value="Rows: 982, Cols: 19"/>
+            <entry key="port_dir_location" type="xstring" value="port_1"/>
+        </config>
+    </config>
+    <config key="filestores">
+        <entry key="file_store_location" type="xstring" isnull="true" value=""/>
+        <entry key="file_store_id" type="xstring" value="df39ae99-afbb-4a58-86e9-8e97d13ef3c5"/>
+    </config>
+</config>
