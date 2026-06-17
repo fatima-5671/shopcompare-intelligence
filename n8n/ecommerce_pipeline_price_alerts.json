@@ -1,0 +1,242 @@
+{
+  "name": "E-Commerce Pipeline (Flask + Google Sheets + Alerts)",
+  "nodes": [
+
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger",
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:5000/products",
+        "responseFormat": "json"
+      },
+      "id": "api",
+      "name": "Fetch Products (Flask API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [320, 300]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (!items.length) throw new Error('No products from API');\nreturn items;"
+      },
+      "id": "validate",
+      "name": "Validate Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [540, 300]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const PKR_TO_USD = 280;\n\nreturn $input.all().map(i => {\n  const d = i.json;\n\n  const price = parseFloat(d.price || 0);\n  const currency = (d.currency || 'PKR').toUpperCase();\n\n  const usd_price = currency === 'USD'\n    ? price\n    : +(price / PKR_TO_USD).toFixed(2);\n\n  return {\n    json: {\n      ...d,\n      price,\n      usd_price,\n      rating: Number(d.rating || 0),\n      review_count: Number(d.review_count || 0)\n    }\n  };\n});"
+      },
+      "id": "clean",
+      "name": "Clean Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => {\n  const d = i.json;\n\n  const value_score = (d.rating * Math.log1p(d.review_count)) / Math.max(d.usd_price, 1);\n\n  return {\n    json: {\n      ...d,\n      value_score: +value_score.toFixed(4),\n      price_tier: d.usd_price < 5 ? 'Budget' : d.usd_price < 20 ? 'Mid' : 'Premium'\n    }\n  };\n});"
+      },
+      "id": "enrich",
+      "name": "Enrich Products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 300]
+    },
+
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "read",
+        "sheetId": "YOUR_PRICE_HISTORY_SHEET_ID",
+        "range": "PriceHistory!A:C"
+      },
+      "id": "gs_read",
+      "name": "Read Price History (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1200, 120]
+    },
+
+    {
+      "parameters": {
+        "mode": "combine"
+      },
+      "id": "merge",
+      "name": "Merge Products + History",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [1420, 300]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nlet history = {};\nlet products = [];\n\nfor (const r of rows) {\n  if (r.json.product_key) {\n    history[r.json.product_key] = r.json;\n  } else {\n    products.push(r);\n  }\n}\n\nconst alerts = [];\n\nfor (const p of products) {\n  const d = p.json;\n\n  const key = d.id || d.title;\n  const curr = d.usd_price;\n\n  const prev = history[key];\n\n  if (!prev) continue;\n\n  const drop = prev.usd_price - curr;\n  const pct = (drop / prev.usd_price) * 100;\n\n  if (pct >= 5 && drop >= 0.5) {\n    alerts.push({ json: {\n      title: d.title,\n      platform: d.platform,\n      old_price: prev.usd_price,\n      new_price: curr,\n      drop_pct: +pct.toFixed(1),\n      url: d.url\n    }});\n  }\n}\n\nreturn alerts.length ? alerts : [{ json: { no_alerts: true } }];"
+      },
+      "id": "detect",
+      "name": "Detect Price Drops",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1640, 300]
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_alerts }}",
+              "operation": "notEqual",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if",
+      "name": "Has Alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1860, 300]
+    },
+
+    {
+      "parameters": {
+        "url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "🔻 PRICE DROP\\n{{$json.title}}\\nOld: {{$json.old_price}} → New: {{$json.new_price}}\\nDrop: {{$json.drop_pct}}%\\n{{$json.url}}"
+            }
+          ]
+        }
+      },
+      "id": "slack",
+      "name": "Send Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2080, 200]
+    },
+
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "append",
+        "sheetId": "YOUR_PRICE_HISTORY_SHEET_ID",
+        "range": "PriceHistory!A:C",
+        "dataMode": "autoMapInputData"
+      },
+      "id": "gs_write",
+      "name": "Save Price History (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2080, 400]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst grouped = {};\n\nfor (const i of items) {\n  const d = i.json;\n\n  if (!grouped[d.platform]) {\n    grouped[d.platform] = { count: 0, total: 0 };\n  }\n\n  grouped[d.platform].count++;\n  grouped[d.platform].total += d.usd_price;\n}\n\nreturn Object.entries(grouped).map(([platform, v]) => ({\n  json: {\n    platform,\n    product_count: v.count,\n    avg_price: +(v.total / v.count).toFixed(2)\n  }\n}));"
+      },
+      "id": "report",
+      "name": "Aggregate Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2300, 300]
+    },
+
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "append",
+        "sheetId": "YOUR_REPORT_SHEET_ID",
+        "range": "Reports!A:C",
+        "dataMode": "autoMapInputData"
+      },
+      "id": "gs_report",
+      "name": "Save Report (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2520, 300]
+    }
+  ],
+
+  "connections": {
+    "Daily Trigger": {
+      "main": [[{ "node": "Fetch Products (Flask API)", "type": "main", "index": 0 }]]
+    },
+    "Fetch Products (Flask API)": {
+      "main": [[{ "node": "Validate Data", "type": "main", "index": 0 }]]
+    },
+    "Validate Data": {
+      "main": [[{ "node": "Clean Data", "type": "main", "index": 0 }]]
+    },
+    "Clean Data": {
+      "main": [[{ "node": "Enrich Products", "type": "main", "index": 0 }]]
+    },
+    "Enrich Products": {
+      "main": [[
+        { "node": "Read Price History (Google Sheets)", "type": "main", "index": 0 }
+      ]]
+    },
+    "Read Price History (Google Sheets)": {
+      "main": [[
+        { "node": "Merge Products + History", "type": "main", "index": 0 }
+      ]]
+    },
+    "Merge Products + History": {
+      "main": [[
+        { "node": "Detect Price Drops", "type": "main", "index": 0 }
+      ]]
+    },
+    "Detect Price Drops": {
+      "main": [[
+        { "node": "Has Alerts?", "type": "main", "index": 0 }
+      ]]
+    },
+    "Has Alerts?": {
+      "main": [
+        [{ "node": "Send Alert", "type": "main", "index": 0 }],
+        [{ "node": "Save Price History (Google Sheets)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Alert": {
+      "main": [[
+        { "node": "Save Price History (Google Sheets)", "type": "main", "index": 0 }
+      ]]
+    },
+    "Save Price History (Google Sheets)": {
+      "main": [[
+        { "node": "Aggregate Report", "type": "main", "index": 0 }
+      ]]
+    },
+    "Aggregate Report": {
+      "main": [[
+        { "node": "Save Report (Google Sheets)", "type": "main", "index": 0 }
+      ]]
+    }
+  }
+}
